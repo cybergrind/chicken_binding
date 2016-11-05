@@ -88,3 +88,63 @@ Sometimes you cannot just pass scheme type to C function and you need to convert
 #### `foreign-lambda` vs `foreign-lambda*`
 
 You should use `foreign-lambda` when you don't need any additional convertational steps to call external code. In `foreign-lambda*` you may write additional pieces of C code when you cannot do direct call.
+
+
+
+### Working with typedefs and structs
+
+We're starting with following definition:
+
+```c
+typedef struct {
+  unsigned int count;
+  const char *str;
+} word_count;
+
+void echo_struct(const word_count *wk);
+```
+
+So `echo_struct` should print `word_count->str` `word_count->count` times.
+
+#### `foreigners` and `define-foreign-record-type`
+
+At first we're using [define-foreign-record-type](http://wiki.call-cc.org/eggref/4/foreigners#define-foreign-record-type). You can find quite clear usage example in [xtypes-egg](https://github.com/retroj/xtypes-egg/blob/master/xtypes.scm) source code.
+
+You have to add imports:
+```scheme
+(import foreign)
+(import foreigners)
+```
+Function definition with `word_count` type as first parameter.
+```scheme
+(define echo-struct-c
+  (foreign-lambda void echo_struct word_count))
+```
+And your record type helpers will look like that:
+
+```scheme
+;; define type
+(define-foreign-record-type (word_count "word_count")
+  (constructor: %make-word-count)  ;; as I understand it define `malloc(word_count)` function
+  ;;  and bind it to `%make-word-count` name
+  (destructor: %free-word-count)   ;; binding `free(word_count *)` function to `%free-word-count`
+  (unsigned-integer count word_count-count word_count-count-set!)
+  (c-string str word_count-str word_count-str-set!))
+
+;; this function used to construct foreign-type when calling `echo-struct-c`
+(define (make-word-count count str)
+  (let ((r (%make-word-count)))
+    (set-finalizer! r %free-word-count)
+    (word_count-count-set! r count)
+    (word_count-str-set! r str)
+    r))
+```
+
+Finally add some scheme function definition:
+
+```scheme
+(define echo-struct
+  (lambda (count str)
+    (echo-struct-c (make-word-count count str))))
+(echo-struct 4 "hello scheme")
+```

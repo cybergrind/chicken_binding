@@ -31,3 +31,36 @@
 (define echo-str2-v2
   (lambda (str)
     (echo-str2-c (str-to-pointer str))))
+
+
+;; using foreigners define-foreign-record-type helper
+
+;; straigforward wrapper
+(define echo-struct-c
+  (foreign-lambda void echo_struct word_count))
+
+
+(import foreign)
+(import foreigners)
+
+;; define type
+(define-foreign-record-type (word_count "word_count")
+  (constructor: %make-word-count)  ;; as I understand it define `malloc(word_count)` function
+  ;;  and bind it to `%make-word-count` name
+  (destructor: %free-word-count)   ;; binding `free(word_count *)` function to `%free-word-count`
+  (unsigned-integer count word_count-count word_count-count-set!)
+  (c-string str word_count-str word_count-str-set!))
+
+;; this function used to construct foreign-type when calling `echo-struct-c`
+(define (make-word-count count str)
+  (let ((r (%make-word-count)))
+    (set-finalizer! r %free-word-count)
+    (word_count-count-set! r count)
+    (word_count-str-set! r str)
+    r))
+
+
+
+(define echo-struct
+  (lambda (count str)
+    (echo-struct-c (make-word-count count str))))
