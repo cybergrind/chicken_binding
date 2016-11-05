@@ -1,1 +1,3 @@
-(print "hello world")
+(declare (uses bindme))
+
+(echo-str "hello world")
