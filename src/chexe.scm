@@ -10,3 +10,5 @@
 
 (do ((i 0 (+ i 1))) ((> i 1) #t)
   (echo-struct-malloc 2 "malloc scheme"))
+
+(echo-struct-locations 1 "test location")

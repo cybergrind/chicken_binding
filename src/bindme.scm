@@ -1,3 +1,4 @@
+(declare (standard-bindings))
 (declare (unit bindme))
 
 (foreign-declare "#include \"bindme.h\"")
@@ -79,3 +80,17 @@
     free(wk);
 END
 ))
+
+;; use locations
+;; inplace write data to structure
+(define write-wk!
+  (foreign-lambda* void (((c-pointer "word_count") wk) (integer count) (c-string str))
+    "wk->count = count;
+     wk->str = str;"))
+
+(define echo-struct-locations
+  (lambda (count str)
+    (let-location ((raw-wk (c-pointer "word_count")))  ;; <- C_alloc(sizeof(word_count))
+      (let ((wk (location raw-wk)))                    ;; &raw-wk
+        (write-wk! wk count str)
+        (echo-struct-c wk)))))

@@ -93,6 +93,8 @@ You should use `foreign-lambda` when you don't need any additional convertationa
 
 ### Working with typedefs and structs
 
+[Wiki article about how to work with structs](https://wiki.call-cc.org/Wrapping%20simple%20c%20structs).
+
 We're starting with following definition:
 
 ```c
@@ -169,4 +171,24 @@ Binding in previous section require quite complex definition and additional egg.
     free(wk);
 END
 ))
+```
+
+
+#### Use locations
+
+You may use [locations](https://wiki.call-cc.org/man/4/Locations) to get pointers in scheme code. Thus you need only fill your structure with some `foreign-lambda*` since I cannot find good way to use `[INIT]` part to initialize location in `let-location` macro.
+
+```scheme
+;; inplace write data to structure
+(define write-wk!
+  (foreign-lambda* void (((c-pointer "word_count") wk) (integer count) (c-string str))
+    "wk->count = count;
+     wk->str = str;"))
+
+(define echo-struct-locations
+  (lambda (count str)
+    (let-location ((raw-wk (c-pointer "word_count")))  ;; <- C_alloc(sizeof(word_count))
+      (let ((wk (location raw-wk)))                    ;; &raw-wk
+        (write-wk! wk count str)
+        (echo-struct-c wk)))))
 ```
