@@ -14,6 +14,7 @@ int main(int argc, char* argv[]){
   wk2->count = 3;
   wk2->str = hw2;
   echo_struct(wk2);
+  free(wk2);
 
   return 0;
 }

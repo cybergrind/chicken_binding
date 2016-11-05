@@ -148,3 +148,25 @@ Finally add some scheme function definition:
     (echo-struct-c (make-word-count count str))))
 (echo-struct 4 "hello scheme")
 ```
+
+#### Simple bindings with `foreign-lambda*`
+
+Binding in previous section require quite complex definition and additional egg. You may write all these things just straightforward with `foreign-lambda*` code::
+
+```c
+(define echo-struct-stack
+  (foreign-lambda* void ((unsigned-integer count) (c-string str))
+    "word_count wk = {count, str};
+     echo_struct(&wk);"))
+
+(define echo-struct-malloc
+  (foreign-lambda* void ((unsigned-integer count) (c-string str))
+#<<END
+    word_count *wk = malloc(sizeof(word_count));
+    wk->count = count;
+    wk->str = str;
+    echo_struct(wk);
+    free(wk);
+END
+))
+```

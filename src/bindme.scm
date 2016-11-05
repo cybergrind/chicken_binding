@@ -59,8 +59,23 @@
     (word_count-str-set! r str)
     r))
 
-
-
 (define echo-struct
   (lambda (count str)
     (echo-struct-c (make-word-count count str))))
+
+;; glue in C. Just straigforward reimplementation of code in `exec.c`
+(define echo-struct-stack
+  (foreign-lambda* void ((unsigned-integer count) (c-string str))
+    "word_count wk = {count, str};
+     echo_struct(&wk);"))
+
+(define echo-struct-malloc
+  (foreign-lambda* void ((unsigned-integer count) (c-string str))
+#<<END
+    word_count *wk = malloc(sizeof(word_count));
+    wk->count = count;
+    wk->str = str;
+    echo_struct(wk);
+    free(wk);
+END
+))
